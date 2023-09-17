@@ -1,15 +1,7 @@
 use std::io;
 use std::process::exit;
 
-enum MetaCommandResult {
-    SUCCESS,
-    UNRECOGNIZED
-}
-
-enum PrepareResult {
-    SUCCESS,
-    UNRECOGNIZED
-}
+mod sql_engine;
 
 fn main() {
 
@@ -23,20 +15,52 @@ fn main() {
         stdin.read_line(&mut input).expect("Failed to read line.");
         input = input.trim().to_string(); // remove trailing newline.
 
-        if input.starts_with('.') {
-            execute_command(input);
+        if input.starts_with('.')
+        {
+            match execute_command(&input)
+            {
+                sql_engine::MetaCommandResult::SUCCESS => { continue; }
+                sql_engine::MetaCommandResult::UNRECOGNIZED => {
+                    println!("Unrecognized command: {}", input);
+                    continue;
+                }
+            }
         }
     }
 }
 
-fn execute_command(cmd: String) -> MetaCommandResult {
+fn execute_command(cmd: &String) -> sql_engine::MetaCommandResult {
     if cmd == ".exit"
     {
         exit(0);
     }
     else
     {
-        println!("Unrecognized command: {}", cmd);
-        return MetaCommandResult::UNRECOGNIZED;
+        return sql_engine::MetaCommandResult::UNRECOGNIZED;
+    }
+}
+
+fn prepare_statement(cmd: &String, statement: &mut sql_engine::Statement)
+{
+    // First six chars are insert. We use a substring since this is followed by data.
+    if &cmd[0..6]== "insert"
+    {
+        statement.cmd = sql_engine::StatementType::INSERT;
+    }
+    if cmd == "select"
+    {
+        statement.cmd = sql_engine::StatementType::SELECT;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{sql_engine, sql_engine::Statement, sql_engine::StatementType};
+
+    #[test]
+    fn prepare_statement_1() {
+        let mut out_statement = sql_engine::Statement{ cmd: sql_engine::StatementType::INSERT };
+        let result = 2 + 2;
+        assert_eq!(result, 4);
     }
 }
