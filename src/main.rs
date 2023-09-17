@@ -4,7 +4,10 @@ use std::process::exit;
 mod sql_engine;
 
 fn main() {
+    entrypoint();
+}
 
+fn entrypoint() {
     let stdin = io::stdin(); // binding a handle.
 
     loop // same as while(true)
@@ -55,7 +58,14 @@ fn prepare_statement(cmd: &String, statement: &mut sql_engine::Statement)
 
 #[cfg(test)]
 mod tests {
-    use crate::{prepare_statement, sql_engine};
+    use crate::{execute_command, prepare_statement, sql_engine};
+
+    #[test]
+    fn execute_command_1() {
+        let cmd = String::from(".dummy");
+        let out = execute_command(&cmd);
+        assert_eq!(out, sql_engine::MetaCommandResult::UNRECOGNIZED);
+    }
 
     // Testing whether the enum is set properly.
     #[test]
@@ -64,6 +74,16 @@ mod tests {
         let cmd = String::from("insert");
         prepare_statement(&cmd, &mut out_statement);
         let result = 2 + 2;
-        assert_eq!(matches!(out_statement.cmd, sql_engine::StatementType::INSERT), true);
+        assert_eq!(out_statement.cmd, sql_engine::StatementType::INSERT);
+    }
+
+    // Testing whether the enum is set properly.
+    #[test]
+    fn prepare_statement_2() {
+        let mut out_statement = sql_engine::Statement{ cmd: sql_engine::StatementType::INSERT };
+        let cmd = String::from("select");
+        prepare_statement(&cmd, &mut out_statement);
+        let result = 2 + 2;
+        assert_eq!(out_statement.cmd, sql_engine::StatementType::SELECT);
     }
 }
