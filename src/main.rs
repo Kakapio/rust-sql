@@ -1,22 +1,42 @@
 use std::io;
 use std::process::exit;
 
+enum MetaCommandResult {
+    SUCCESS,
+    UNRECOGNIZED
+}
+
+enum PrepareResult {
+    SUCCESS,
+    UNRECOGNIZED
+}
+
 fn main() {
 
-    let mut input = String::new();
     let stdin = io::stdin(); // binding a handle.
 
-    println!("Please enter the SQL command: ");
-    stdin.read_line(&mut input).expect("Failed to read line.");
-    input = input.trim().to_string(); // remove trailing newline.
-    println!("You entered: {}", input);
+    loop // same as while(true)
+    {
+        let mut input = String::new();
 
-    if input == ".exit"
+        println!("Please enter the SQL command: ");
+        stdin.read_line(&mut input).expect("Failed to read line.");
+        input = input.trim().to_string(); // remove trailing newline.
+
+        if input.starts_with('.') {
+            execute_command(input);
+        }
+    }
+}
+
+fn execute_command(cmd: String) -> MetaCommandResult {
+    if cmd == ".exit"
     {
         exit(0);
     }
     else
     {
-        println!("Unrecognized command: {}", input);
+        println!("Unrecognized command: {}", cmd);
+        return MetaCommandResult::UNRECOGNIZED;
     }
 }
