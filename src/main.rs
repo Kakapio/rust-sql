@@ -55,12 +55,15 @@ fn prepare_statement(cmd: &String, statement: &mut sql_engine::Statement)
 
 #[cfg(test)]
 mod tests {
-    use crate::{sql_engine, sql_engine::Statement, sql_engine::StatementType};
+    use crate::{prepare_statement, sql_engine};
 
+    // Testing whether the enum is set properly.
     #[test]
     fn prepare_statement_1() {
-        let mut out_statement = sql_engine::Statement{ cmd: sql_engine::StatementType::INSERT };
+        let mut out_statement = sql_engine::Statement{ cmd: sql_engine::StatementType::SELECT };
+        let cmd = String::from("insert");
+        prepare_statement(&cmd, &mut out_statement);
         let result = 2 + 2;
-        assert_eq!(result, 4);
+        assert_eq!(matches!(out_statement.cmd, sql_engine::StatementType::INSERT), true);
     }
 }
