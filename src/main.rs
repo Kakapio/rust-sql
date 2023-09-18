@@ -1,14 +1,16 @@
 use std::io;
 use std::process::exit;
-use crate::sql_engine::*;
+use crate::parser::*;
+use scan_fmt::*;
 
-mod sql_engine;
+mod parser;
 
 fn main() {
     entrypoint();
 }
 
-fn entrypoint() {
+fn entrypoint()
+{
     let stdin = io::stdin(); // binding a handle.
 
     loop // same as while(true)
@@ -19,14 +21,15 @@ fn entrypoint() {
         stdin.read_line(&mut input).expect("Failed to read line.");
         input = input.trim().to_string(); // remove trailing newline.
 
+        // Is a command
         if input.starts_with('.')
         {
             match execute_command(&input)
             {
-                MetaCommandResult::SUCCESS => { continue; }
+                MetaCommandResult::SUCCESS => { continue; } // Executed command, get next input.
                 MetaCommandResult::UNRECOGNIZED => {
                     println!("Unrecognized command: {}", input);
-                    continue;
+                    continue; // skip this iteration of our IO loop.
                 }
             }
         }
@@ -35,12 +38,19 @@ fn entrypoint() {
 
         match prepare_statement(&input, &mut statement)
         {
-            PrepareResult::SUCCESS => { break; }
+            PrepareResult::SUCCESS => { println!("Successfully prepared statement...") }
             PrepareResult::UNRECOGNIZED => {
                 println!("Unrecognized keyword at start of {}", input);
                 continue;
             }
+            PrepareResult::SYNTAX_ERROR => {
+                println!("Unrecognized syntax for command. Did you follow the format?");
+                continue;
+            }
         }
+
+        execute_statement(&statement);
+        println!("Successfully executed...");
     }
 }
 
@@ -62,6 +72,17 @@ fn prepare_statement(cmd: &String, statement: &mut Statement) -> PrepareResult
     if cmd.len() >= 6 && &cmd[0..6]== "insert"
     {
         statement.cmd = StatementType::INSERT;
+
+        // This is how we take our formatted string and put it into variables.
+        let (id, username, email) = match scan_fmt!(cmd, "insert {} {} {}", u32, String, String) {
+            Ok((id, username, email)) => (id, username, email),
+            Err(_) => {
+                println!("Parsing error");
+                return PrepareResult::SYNTAX_ERROR;
+            }
+        };
+
+        statement.row_to_insert = Row { id, username, email };
         return PrepareResult::SUCCESS;
     }
     if cmd == "select"
@@ -73,10 +94,18 @@ fn prepare_statement(cmd: &String, statement: &mut Statement) -> PrepareResult
     return PrepareResult::UNRECOGNIZED;
 }
 
+fn execute_statement(statement: &Statement)
+{
+    match statement.cmd {
+        StatementType::INSERT => { println!("Performing an insert...") }
+        StatementType::SELECT => { println!("Performing a select...") }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{execute_command, prepare_statement};
-    use crate::sql_engine::*;
+    use crate::parser::*;
 
     // Testing whether unrecognized commands are rejected.
     #[test]
@@ -108,17 +137,52 @@ mod tests {
     #[test]
     fn prepare_statement_out_success() {
         let mut out_statement = Statement::default();
-        let cmd = String::from("insert");
+        let cmd = String::from("insert 10 monkeylover ape@gmail.com");
         let out_result = prepare_statement(&cmd, &mut out_statement);
         assert_eq!(out_result, PrepareResult::SUCCESS);
     }
 
-    // Testing whether the output result is correct.
+    // Testing whether the output result handles bad commands.
     #[test]
     fn prepare_statement_out_failure() {
         let mut out_statement = Statement::default();
         let cmd = String::from("dummy");
         let out_result = prepare_statement(&cmd, &mut out_statement);
         assert_eq!(out_result, PrepareResult::UNRECOGNIZED);
+    }
+
+    // Testing whether the insert syntax error is handled.
+    #[test]
+    fn prepare_statement_out_syntax_error() {
+        let mut out_statement = Statement::default();
+        let cmd = String::from("insert");
+        let out_result = prepare_statement(&cmd, &mut out_statement);
+        assert_eq!(out_result, PrepareResult::SYNTAX_ERROR);
+    }
+
+    // Testing whether the parsing works.
+    #[test]
+    fn prepare_statement_insert_parse() {
+        let mut out_statement = Statement::default();
+        let cmd = String::from("insert 10 monkeylover ape@gmail.com");
+        prepare_statement(&cmd, &mut out_statement);
+        assert_eq!(out_statement.row_to_insert, Row {
+            id: 10,
+            username: String::from("monkeylover"),
+            email: String::from("ape@gmail.com")
+        });
+    }
+
+    // Testing whether the parsing works by checking with incorrect data.
+    #[test]
+    fn prepare_statement_insert_parse_fail() {
+        let mut out_statement = Statement::default();
+        let cmd = String::from("insert 10 monkeylover ape@gmail.com");
+        prepare_statement(&cmd, &mut out_statement);
+        assert_ne!(out_statement.row_to_insert, Row {
+            id: 10,
+            username: String::from("blah"),
+            email: String::from("ape@gmail.com")
+        });
     }
 }
