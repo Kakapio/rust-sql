@@ -1,5 +1,6 @@
 use std::io;
 use std::process::exit;
+use crate::sql_engine::*;
 
 mod sql_engine;
 
@@ -22,68 +23,102 @@ fn entrypoint() {
         {
             match execute_command(&input)
             {
-                sql_engine::MetaCommandResult::SUCCESS => { continue; }
-                sql_engine::MetaCommandResult::UNRECOGNIZED => {
+                MetaCommandResult::SUCCESS => { continue; }
+                MetaCommandResult::UNRECOGNIZED => {
                     println!("Unrecognized command: {}", input);
                     continue;
                 }
             }
         }
+
+        let mut statement = Statement::default();
+
+        match prepare_statement(&input, &mut statement)
+        {
+            PrepareResult::SUCCESS => { break; }
+            PrepareResult::UNRECOGNIZED => {
+                println!("Unrecognized keyword at start of {}", input);
+                continue;
+            }
+        }
     }
 }
 
-fn execute_command(cmd: &String) -> sql_engine::MetaCommandResult {
+fn execute_command(cmd: &String) -> MetaCommandResult
+{
     if cmd == ".exit"
     {
         exit(0);
     }
     else
     {
-        return sql_engine::MetaCommandResult::UNRECOGNIZED;
+        return MetaCommandResult::UNRECOGNIZED;
     }
 }
 
-fn prepare_statement(cmd: &String, statement: &mut sql_engine::Statement)
+fn prepare_statement(cmd: &String, statement: &mut Statement) -> PrepareResult
 {
     // First six chars are insert. We use a substring since this is followed by data.
-    if &cmd[0..6]== "insert"
+    if cmd.len() >= 6 && &cmd[0..6]== "insert"
     {
-        statement.cmd = sql_engine::StatementType::INSERT;
+        statement.cmd = StatementType::INSERT;
+        return PrepareResult::SUCCESS;
     }
     if cmd == "select"
     {
-        statement.cmd = sql_engine::StatementType::SELECT;
+        statement.cmd = StatementType::SELECT;
+        return PrepareResult::SUCCESS;
     }
+
+    return PrepareResult::UNRECOGNIZED;
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{execute_command, prepare_statement, sql_engine};
+    use crate::{execute_command, prepare_statement};
+    use crate::sql_engine::*;
 
+    // Testing whether unrecognized commands are rejected.
     #[test]
-    fn execute_command_1() {
+    fn execute_command_unrecognized() {
         let cmd = String::from(".dummy");
         let out = execute_command(&cmd);
-        assert_eq!(out, sql_engine::MetaCommandResult::UNRECOGNIZED);
+        assert_eq!(out, MetaCommandResult::UNRECOGNIZED);
     }
 
     // Testing whether the enum is set properly.
     #[test]
-    fn prepare_statement_1() {
-        let mut out_statement = sql_engine::Statement{ cmd: sql_engine::StatementType::SELECT };
+    fn prepare_statement_set_insert() {
+        let mut out_statement = Statement::default();
         let cmd = String::from("insert");
         prepare_statement(&cmd, &mut out_statement);
-        let result = 2 + 2;
-        assert_eq!(out_statement.cmd, sql_engine::StatementType::INSERT);
+        assert_eq!(out_statement.cmd, StatementType::INSERT);
     }
 
     // Testing whether the enum is set properly.
     #[test]
-    fn prepare_statement_2() {
-        let mut out_statement = sql_engine::Statement{ cmd: sql_engine::StatementType::INSERT };
+    fn prepare_statement_set_select() {
+        let mut out_statement = Statement::default();
         let cmd = String::from("select");
         prepare_statement(&cmd, &mut out_statement);
-        let result = 2 + 2;
-        assert_eq!(out_statement.cmd, sql_engine::StatementType::SELECT);
+        assert_eq!(out_statement.cmd, StatementType::SELECT);
+    }
+
+    // Testing whether the output result is correct.
+    #[test]
+    fn prepare_statement_out_success() {
+        let mut out_statement = Statement::default();
+        let cmd = String::from("insert");
+        let out_result = prepare_statement(&cmd, &mut out_statement);
+        assert_eq!(out_result, PrepareResult::SUCCESS);
+    }
+
+    // Testing whether the output result is correct.
+    #[test]
+    fn prepare_statement_out_failure() {
+        let mut out_statement = Statement::default();
+        let cmd = String::from("dummy");
+        let out_result = prepare_statement(&cmd, &mut out_statement);
+        assert_eq!(out_result, PrepareResult::UNRECOGNIZED);
     }
 }
