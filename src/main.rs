@@ -4,6 +4,7 @@ use crate::parser::*;
 use scan_fmt::*;
 
 mod parser;
+mod backend;
 
 fn main() {
     entrypoint();
@@ -74,7 +75,7 @@ fn prepare_statement(cmd: &String, statement: &mut Statement) -> PrepareResult
         statement.cmd = StatementType::INSERT;
 
         // This is how we take our formatted string and put it into variables.
-        let (id, username, email) = match scan_fmt!(cmd, "insert {} {} {}", u32, String, String) {
+        let (id, username, email) = match scan_fmt!(cmd, "insert {} {} {}", u32, Username, Email) {
             Ok((id, username, email)) => (id, username, email),
             Err(_) => {
                 println!("Parsing error");
@@ -168,8 +169,8 @@ mod tests {
         prepare_statement(&cmd, &mut out_statement);
         assert_eq!(out_statement.row_to_insert, Row {
             id: 10,
-            username: String::from("monkeylover"),
-            email: String::from("ape@gmail.com")
+            username: "monkeylover".chars().collect(), //String::from("monkeylover"),
+            email: "ape@gmail.com".chars().collect()//String::from("ape@gmail.com")
         });
     }
 
@@ -181,8 +182,8 @@ mod tests {
         prepare_statement(&cmd, &mut out_statement);
         assert_ne!(out_statement.row_to_insert, Row {
             id: 10,
-            username: String::from("blah"),
-            email: String::from("ape@gmail.com")
+            username: "blah".chars().collect(), //String::from("blah"),
+            email: "ape@gmail.com".chars().collect() //String::from("ape@gmail.com")
         });
     }
 }
