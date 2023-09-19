@@ -30,9 +30,9 @@ type UsernameArray = [char; 32];
 type EmailArray = [char; 255];
 
 #[derive(PartialEq, Debug)]
-pub struct Username(UsernameArray);
+pub struct Username(pub UsernameArray);
 #[derive(PartialEq, Debug)]
-pub struct Email(EmailArray);
+pub struct Email(pub EmailArray);
 
 impl Default for Username {
     fn default() -> Self {

@@ -75,8 +75,29 @@ fn prepare_statement(cmd: &String, statement: &mut Statement) -> PrepareResult
         statement.cmd = StatementType::INSERT;
 
         // This is how we take our formatted string and put it into variables.
-        let (id, username, email) = match scan_fmt!(cmd, "insert {} {} {}", u32, Username, Email) {
-            Ok((id, username, email)) => (id, username, email),
+        let (id, username, email) = match scan_fmt!(cmd, "insert {} {} {}", u32, String, String) {
+            Ok((id, username, email)) => {
+                // Convert String to char arrays
+                let username_chars: [char; 32] = {
+                    let mut chars = [' '; 32];
+                    let bytes = username.as_bytes();
+                    for (i, &byte) in bytes.iter().enumerate() {
+                        chars[i] = byte as char;
+                    }
+                    chars
+                };
+
+                let email_chars: [char; 255] = {
+                    let mut chars = [' '; 255];
+                    let bytes = email.as_bytes();
+                    for (i, &byte) in bytes.iter().enumerate() {
+                        chars[i] = byte as char;
+                    }
+                    chars
+                };
+
+                (id, Username(username_chars), Email(email_chars))
+            },
             Err(_) => {
                 println!("Parsing error");
                 return PrepareResult::SYNTAX_ERROR;
@@ -169,8 +190,8 @@ mod tests {
         prepare_statement(&cmd, &mut out_statement);
         assert_eq!(out_statement.row_to_insert, Row {
             id: 10,
-            username: "monkeylover".chars().collect(), //String::from("monkeylover"),
-            email: "ape@gmail.com".chars().collect()//String::from("ape@gmail.com")
+            username: Username("monkeylover".chars().take(32).collect::<Vec<char>>().try_into().unwrap()), //String::from("monkeylover"),
+            email: Email("ape@gmail.com".chars().take(32).collect::<Vec<char>>().try_into().unwrap())//String::from("ape@gmail.com")
         });
     }
 
@@ -182,8 +203,8 @@ mod tests {
         prepare_statement(&cmd, &mut out_statement);
         assert_ne!(out_statement.row_to_insert, Row {
             id: 10,
-            username: "blah".chars().collect(), //String::from("blah"),
-            email: "ape@gmail.com".chars().collect() //String::from("ape@gmail.com")
+            username: Username("blah".chars().take(32).collect::<Vec<char>>().try_into().unwrap()), //String::from("blah"),
+            email: Email("ape@gmail.com".chars().take(32).collect::<Vec<char>>().try_into().unwrap()) //String::from("ape@gmail.com")
         });
     }
 }
