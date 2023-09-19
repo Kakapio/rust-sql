@@ -1,7 +1,6 @@
 use std::io;
 use std::process::exit;
 use crate::parser::*;
-use scan_fmt::*;
 
 mod parser;
 mod backend;
@@ -67,36 +66,6 @@ fn execute_command(cmd: &String) -> MetaCommandResult
     }
 }
 
-fn prepare_statement(cmd: &String, statement: &mut Statement) -> PrepareResult
-{
-    // First six chars are insert. We use a substring since this is followed by data.
-    if cmd.len() >= 6 && &cmd[0..6]== "insert"
-    {
-        statement.cmd = StatementType::INSERT;
-
-        // This is how we take our formatted string and put it into variables.
-        let (id, username, email) = match scan_fmt!(cmd, "insert {} {} {}", u32, String, String) {
-            Ok((id, username, email)) => (id,
-                                          Username(str_to_array(&username)),
-                                          Email(str_to_array(&email))),
-            Err(_) => {
-                println!("Parsing error");
-                return PrepareResult::SYNTAX_ERROR;
-            }
-        };
-
-        statement.row_to_insert = Row { id, username, email };
-        return PrepareResult::SUCCESS;
-    }
-    if cmd == "select"
-    {
-        statement.cmd = StatementType::SELECT;
-        return PrepareResult::SUCCESS;
-    }
-
-    return PrepareResult::UNRECOGNIZED;
-}
-
 fn execute_statement(statement: &Statement)
 {
     match statement.cmd {
@@ -107,13 +76,17 @@ fn execute_statement(statement: &Statement)
 
 fn str_to_array<const N: usize>(s: &str) -> [char; N] {
     let mut chars = s.chars();
+
+    // Create an empty array and populate it with chars from our string. Use the given default if
+    // we run out of chars.
     [(); N].map(|_| chars.next().unwrap_or('\0'))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{execute_command, prepare_statement, str_to_array};
+    use crate::{execute_command, str_to_array};
     use crate::parser::*;
+    use crate::parser::prepare_statement;
 
     // Testing whether unrecognized commands are rejected.
     #[test]
@@ -176,8 +149,8 @@ mod tests {
         prepare_statement(&cmd, &mut out_statement);
         assert_eq!(out_statement.row_to_insert, Row {
             id: 10,
-            username: Username(str_to_array::<32>("monkeylover")), //String::from("monkeylover"),
-            email: Email(str_to_array::<255>("ape@gmail.com"))//String::from("ape@gmail.com")
+            username: Username(str_to_array("monkeylover")),
+            email: Email(str_to_array("ape@gmail.com"))
         });
     }
 
@@ -189,8 +162,8 @@ mod tests {
         prepare_statement(&cmd, &mut out_statement);
         assert_ne!(out_statement.row_to_insert, Row {
             id: 10,
-            username: Username(str_to_array::<32>("blah")), //String::from("blah"),
-            email: Email(str_to_array::<255>("blah@gmail.com")) //String::from("ape@gmail.com")
+            username: Username(str_to_array("blah")),
+            email: Email(str_to_array("blah@gmail.com"))
         });
     }
 }
