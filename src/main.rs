@@ -76,28 +76,9 @@ fn prepare_statement(cmd: &String, statement: &mut Statement) -> PrepareResult
 
         // This is how we take our formatted string and put it into variables.
         let (id, username, email) = match scan_fmt!(cmd, "insert {} {} {}", u32, String, String) {
-            Ok((id, username, email)) => {
-                // Convert String to char arrays
-                let username_chars: [char; 32] = {
-                    let mut chars = [' '; 32];
-                    let bytes = username.as_bytes();
-                    for (i, &byte) in bytes.iter().enumerate() {
-                        chars[i] = byte as char;
-                    }
-                    chars
-                };
-
-                let email_chars: [char; 255] = {
-                    let mut chars = [' '; 255];
-                    let bytes = email.as_bytes();
-                    for (i, &byte) in bytes.iter().enumerate() {
-                        chars[i] = byte as char;
-                    }
-                    chars
-                };
-
-                (id, Username(username_chars), Email(email_chars))
-            },
+            Ok((id, username, email)) => (id,
+                                          Username(str_to_array(&username)),
+                                          Email(str_to_array(&email))),
             Err(_) => {
                 println!("Parsing error");
                 return PrepareResult::SYNTAX_ERROR;
@@ -124,9 +105,14 @@ fn execute_statement(statement: &Statement)
     }
 }
 
+fn str_to_array<const N: usize>(s: &str) -> [char; N] {
+    let mut chars = s.chars();
+    [(); N].map(|_| chars.next().unwrap_or('\0'))
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{execute_command, prepare_statement};
+    use crate::{execute_command, prepare_statement, str_to_array};
     use crate::parser::*;
 
     // Testing whether unrecognized commands are rejected.
@@ -190,8 +176,8 @@ mod tests {
         prepare_statement(&cmd, &mut out_statement);
         assert_eq!(out_statement.row_to_insert, Row {
             id: 10,
-            username: Username("monkeylover".chars().take(32).collect::<Vec<char>>().try_into().unwrap()), //String::from("monkeylover"),
-            email: Email("ape@gmail.com".chars().take(32).collect::<Vec<char>>().try_into().unwrap())//String::from("ape@gmail.com")
+            username: Username(str_to_array::<32>("monkeylover")), //String::from("monkeylover"),
+            email: Email(str_to_array::<255>("ape@gmail.com"))//String::from("ape@gmail.com")
         });
     }
 
@@ -203,8 +189,8 @@ mod tests {
         prepare_statement(&cmd, &mut out_statement);
         assert_ne!(out_statement.row_to_insert, Row {
             id: 10,
-            username: Username("blah".chars().take(32).collect::<Vec<char>>().try_into().unwrap()), //String::from("blah"),
-            email: Email("ape@gmail.com".chars().take(32).collect::<Vec<char>>().try_into().unwrap()) //String::from("ape@gmail.com")
+            username: Username(str_to_array::<32>("blah")), //String::from("blah"),
+            email: Email(str_to_array::<255>("blah@gmail.com")) //String::from("ape@gmail.com")
         });
     }
 }
