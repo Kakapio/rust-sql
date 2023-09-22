@@ -74,14 +74,6 @@ fn execute_statement(statement: &Statement)
     }
 }
 
-fn str_to_array<const N: usize>(s: &str) -> [char; N] {
-    let mut chars = s.chars();
-
-    // Create an empty array and populate it with chars from our string. Use the given default if
-    // we run out of chars.
-    [(); N].map(|_| chars.next().unwrap_or('\0'))
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{execute_command, str_to_array};
@@ -149,8 +141,8 @@ mod tests {
         prepare_statement(&cmd, &mut out_statement);
         assert_eq!(out_statement.row_to_insert, Row {
             id: 10,
-            username: Username(str_to_array("monkeylover")),
-            email: Email(str_to_array("ape@gmail.com"))
+            username: String::from("monkeylover"),
+            email: String::from("ape@gmail.com")
         });
     }
 
@@ -162,8 +154,8 @@ mod tests {
         prepare_statement(&cmd, &mut out_statement);
         assert_ne!(out_statement.row_to_insert, Row {
             id: 10,
-            username: Username(str_to_array("blah")),
-            email: Email(str_to_array("blah@gmail.com"))
+            username: String::from("blah"),
+            email: String::from("blah@gmail.com")
         });
     }
 }
