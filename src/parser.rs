@@ -25,7 +25,7 @@ pub enum StatementType {
 #[derive(PartialEq, Debug, Default)]
 pub struct Statement {
     pub cmd: StatementType,
-    pub row_to_insert: Row
+    pub row_instance: Row
 }
 
 #[derive(PartialEq, Debug, Default)]
@@ -51,7 +51,7 @@ pub fn prepare_statement(cmd: &String, statement: &mut Statement) -> PrepareResu
             }
         };
 
-        statement.row_to_insert = Row { id, username, email };
+        statement.row_instance = Row { id, username, email };
         return PrepareResult::SUCCESS;
     }
     if cmd == "select"

@@ -1,6 +1,7 @@
 use std::io;
 use std::process::exit;
 use crate::parser::*;
+use crate::backend::*;
 
 mod parser;
 mod backend;
@@ -12,6 +13,7 @@ fn main() {
 fn entrypoint()
 {
     let stdin = io::stdin(); // binding a handle.
+    let mut table = Table::new();
 
     loop // same as while(true)
     {
@@ -44,12 +46,12 @@ fn entrypoint()
                 continue;
             }
             PrepareResult::SYNTAX_ERROR => {
-                println!("Unrecognized syntax for command. Did you follow the format?");
+                println!("Unrecognized syntax for command. Did you follow the proper format?");
                 continue;
             }
         }
 
-        execute_statement(&statement);
+        execute_statement(statement, &mut table);
         println!("Successfully executed...");
     }
 }
@@ -66,17 +68,39 @@ fn execute_command(cmd: &String) -> MetaCommandResult
     }
 }
 
-fn execute_statement(statement: &Statement)
+fn execute_statement(statement: Statement, tb: &mut Table) -> ExecuteResult
 {
     match statement.cmd {
-        StatementType::INSERT => { println!("Performing an insert...") }
-        StatementType::SELECT => { println!("Performing a select...") }
+        StatementType::INSERT => {
+            println!("Performing an insert...");
+            execute_insert(statement, tb)
+        }
+        StatementType::SELECT => {
+            println!("Performing a select...");
+            execute_select(statement, tb)
+        }
     }
+}
+
+// Todo: Should I move or borrow statement... I think move?
+fn execute_insert(statement: Statement, table: &mut Table) -> ExecuteResult {
+    table.data.push(statement.row_instance);
+    ExecuteResult::SUCCESS
+}
+
+fn execute_select(statement: Statement, table: &mut Table) -> ExecuteResult {
+
+    for row in table.data.iter() {
+        if row.id == statement.row_instance.id {
+            println!("Found data: {:?}", row);
+        }
+    }
+    ExecuteResult::SUCCESS
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{execute_command, str_to_array};
+    use crate::{execute_command};
     use crate::parser::*;
     use crate::parser::prepare_statement;
 
@@ -139,7 +163,7 @@ mod tests {
         let mut out_statement = Statement::default();
         let cmd = String::from("insert 10 monkeylover ape@gmail.com");
         prepare_statement(&cmd, &mut out_statement);
-        assert_eq!(out_statement.row_to_insert, Row {
+        assert_eq!(out_statement.row_instance, Row {
             id: 10,
             username: String::from("monkeylover"),
             email: String::from("ape@gmail.com")
@@ -152,7 +176,7 @@ mod tests {
         let mut out_statement = Statement::default();
         let cmd = String::from("insert 10 monkeylover ape@gmail.com");
         prepare_statement(&cmd, &mut out_statement);
-        assert_ne!(out_statement.row_to_insert, Row {
+        assert_ne!(out_statement.row_instance, Row {
             id: 10,
             username: String::from("blah"),
             email: String::from("blah@gmail.com")
