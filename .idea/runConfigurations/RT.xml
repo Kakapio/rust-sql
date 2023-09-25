@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="RT" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
-    <option name="command" value="run --package rust-sql --bin rust-sql" />
+    <option name="command" value="run --package sql_engine --bin sql_engine" />
     <option name="workingDirectory" value="file://$PROJECT_DIR$" />
     <option name="emulateTerminal" value="false" />
     <option name="channel" value="DEFAULT" />
