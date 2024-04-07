@@ -6,7 +6,7 @@ use crate::parser::*;
 fn execute_command_unrecognized() {
     let cmd = String::from(".dummy");
     let out = execute_command(&cmd);
-    assert_eq!(out, MetaCommandResult::UNRECOGNIZED);
+    assert_eq!(out, MetaCommandResult::Unrecognized);
 }
 
 // Testing whether the enum is set properly.
@@ -15,7 +15,7 @@ fn prepare_statement_set_insert() {
     let mut out_statement = Statement::default();
     let cmd = String::from("insert");
     prepare_statement(&cmd, &mut out_statement);
-    assert_eq!(out_statement.cmd, StatementType::INSERT);
+    assert_eq!(out_statement.cmd, StatementType::Insert);
 }
 
 // Testing whether the enum is set properly.
@@ -24,25 +24,23 @@ fn prepare_statement_set_select() {
     let mut out_statement = Statement::default();
     let cmd = String::from("select");
     prepare_statement(&cmd, &mut out_statement);
-    assert_eq!(out_statement.cmd, StatementType::SELECT);
+    assert_eq!(out_statement.cmd, StatementType::Select);
 }
 
 // Testing whether the output result is correct.
 #[test]
 fn prepare_statement_out_success() {
-    let mut out_statement = Statement::default();
     let cmd = String::from("insert 10 monkeylover ape@gmail.com");
-    let out_result = prepare_statement(&cmd, &mut out_statement);
-    assert_eq!(out_result, PrepareResult::SUCCESS);
+    let out_result = prepare_statement(&cmd, &mut Statement::default());
+    assert_eq!(out_result, PrepareResult::Success);
 }
 
 // Testing whether the output result handles bad commands.
 #[test]
 fn prepare_statement_out_failure() {
-    let mut out_statement = Statement::default();
     let cmd = String::from("dummy");
-    let out_result = prepare_statement(&cmd, &mut out_statement);
-    assert_eq!(out_result, PrepareResult::UNRECOGNIZED);
+    let out_result = prepare_statement(&cmd, &mut Statement::default());
+    assert_eq!(out_result, PrepareResult::Unrecognized);
 }
 
 // Testing whether the insert syntax error is handled.
@@ -51,7 +49,7 @@ fn prepare_statement_out_syntax_error() {
     let mut out_statement = Statement::default();
     let cmd = String::from("insert");
     let out_result = prepare_statement(&cmd, &mut out_statement);
-    assert_eq!(out_result, PrepareResult::SYNTAX_ERROR);
+    assert_eq!(out_result, PrepareResult::SyntaxError);
 }
 
 // Testing whether the parsing works.
