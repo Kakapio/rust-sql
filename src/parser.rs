@@ -29,7 +29,7 @@ pub enum StatementType {
 #[derive(PartialEq, Debug, Default)]
 pub struct Statement {
     pub cmd: StatementType,
-    pub row_instance: Row,
+    pub row_instance: Option<Row>,
 }
 
 #[derive(PartialEq, Debug, Default)]
@@ -39,36 +39,63 @@ pub struct Row {
     pub email: String,
 }
 
+/// Converts a SQL statement into bytecode.
 pub fn prepare_statement(cmd: &String, statement: &mut Statement) -> PrepareResult {
-    // Use fall-through logic here in the future.
+    // TODO: Use fall-through logic here in the future.
     if cmd.len() >= 6 {
         // First six chars are insert. We use a substring since this is followed by data.
         if &cmd[0..6] == "insert" {
-            statement.cmd = StatementType::Insert;
-
-            // This is how we take our formatted string and put it into variables.
-            let (id, username, email) = match scan_fmt!(cmd, "insert {} {} {}", u32, String, String)
-            {
-                Ok((id, username, email)) => (id, username, email),
-                Err(_) => {
-                    println!("Parsing error");
-                    return PrepareResult::SyntaxError;
-                }
-            };
-
-            statement.row_instance = Row {
-                id,
-                username,
-                email,
-            };
-            return PrepareResult::Success;
+            return prepare_insert(statement, cmd);
         }
         // This can be either 'select' returning all, or 'select 2' return item with ID 2.
         else if &cmd[0..6] == "select" {
-            statement.cmd = StatementType::Select;
-            return PrepareResult::Success;
+            return prepare_select(statement, cmd);
         }
     }
 
-    return PrepareResult::Unrecognized;
+    PrepareResult::Unrecognized
+}
+
+fn prepare_insert(statement: &mut Statement, cmd: &String) -> PrepareResult {
+    statement.cmd = StatementType::Insert;
+    let (id, username, email) = match scan_fmt!(cmd, "insert {} {} {}", u32, String, String) {
+        Ok((id, username, email)) => (id, username, email),
+        Err(_) => {
+            println!("Parsing error");
+            return PrepareResult::SyntaxError;
+        }
+    };
+
+    statement.row_instance = Some(Row {
+        id,
+        username,
+        email,
+    });
+
+    return PrepareResult::Success;
+}
+
+fn prepare_select(statement: &mut Statement, cmd: &String) -> PrepareResult {
+    statement.cmd = StatementType::Select;
+
+    // We are selecting everything in this case, e.g "select". Do not bother looking for specifics.
+    if cmd.len() == 6 {
+        statement.row_instance = None;
+        return PrepareResult::Success;
+    }
+
+    // Grab the specific row we are looking for.
+    let id = match scan_fmt!(cmd, "select {}", u32) {
+        Ok(id) => id,
+        Err(_) => {
+            println!("Parsing error");
+            return PrepareResult::SyntaxError;
+        }
+    };
+
+    statement.row_instance = Some(Row {
+        id: id, username: Default::default(), email: Default::default()
+    });
+    
+    return PrepareResult::Success;
 }

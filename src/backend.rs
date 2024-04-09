@@ -94,14 +94,27 @@ fn execute_statement(statement: Statement, tb: &mut Table) -> ExecuteResult {
 }
 
 fn execute_insert(statement: Statement, table: &mut Table) -> ExecuteResult {
-    table.data.push(statement.row_instance);
+    table.data.push(statement.row_instance.expect("Insert is missing row data."));
 
     ExecuteResult::Success
 }
 
 fn execute_select(statement: Statement, table: &mut Table) -> ExecuteResult {
+
+    // Select didn't specify an instance. Return all data in table.
+    if statement.row_instance == None {
+        for row in table.data.iter() {
+            println!("Found data: {:?}", row);
+        }
+        return ExecuteResult::Success;
+    }
+    
+    // Select specified an instance of data.
     for row in table.data.iter() {
-        if row.id == statement.row_instance.id {
+        /* I use 'as_ref()' here because otherwise the ownership of row_instance would go to unwrap().
+         * unwrap() consumes the given option which means iteration gets interrupted.
+         */
+        if row.id == statement.row_instance.as_ref().unwrap().id {
             println!("Found data: {:?}", row);
         }
     }

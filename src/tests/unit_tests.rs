@@ -60,11 +60,11 @@ fn prepare_statement_insert_parse() {
     prepare_statement(&cmd, &mut out_statement);
     assert_eq!(
         out_statement.row_instance,
-        Row {
+        Some(Row {
             id: 10,
             username: String::from("monkeylover"),
             email: String::from("ape@gmail.com")
-        }
+        })
     );
 }
 
@@ -76,10 +76,10 @@ fn prepare_statement_insert_parse_fail() {
     prepare_statement(&cmd, &mut out_statement);
     assert_ne!(
         out_statement.row_instance,
-        Row {
+        Some(Row {
             id: 10,
             username: String::from("blah"),
             email: String::from("blah@gmail.com")
-        }
+        })
     );
 }
