@@ -32,7 +32,7 @@ pub struct Statement {
     pub row_instance: Option<Row>,
 }
 
-#[derive(PartialEq, Debug, Default)]
+#[derive(PartialEq, Debug, Default, Clone)]
 pub struct Row {
     pub id: u32,
     pub username: String,

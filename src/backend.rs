@@ -4,7 +4,7 @@ use std::process::exit;
 
 #[derive(PartialEq, Debug, Default)]
 pub enum ExecuteResult {
-    Success,
+    Success(Option<Vec<Row>>),
     #[default]
     TableFull,
 }
@@ -61,7 +61,7 @@ pub fn entrypoint() {
         }
 
         match execute_statement(statement, &mut table) {
-            ExecuteResult::Success => {
+            ExecuteResult::Success(data) => {
                 println!("Successfully executed...")
             }
             ExecuteResult::TableFull => {
@@ -96,7 +96,7 @@ fn execute_statement(statement: Statement, tb: &mut Table) -> ExecuteResult {
 fn execute_insert(statement: Statement, table: &mut Table) -> ExecuteResult {
     table.data.push(statement.row_instance.expect("Insert is missing row data."));
 
-    ExecuteResult::Success
+    ExecuteResult::Success(None)
 }
 
 fn execute_select(statement: Statement, table: &mut Table) -> ExecuteResult {
@@ -106,10 +106,12 @@ fn execute_select(statement: Statement, table: &mut Table) -> ExecuteResult {
         for row in table.data.iter() {
             println!("Found data: {:?}", row);
         }
-        return ExecuteResult::Success;
+        return ExecuteResult::Success(Some(table.data.iter().cloned().collect()));
     }
+
     
-    // Select specified an instance of data.
+    
+    // Select cmd specified an instance of data.
     for row in table.data.iter() {
         /* I use 'as_ref()' here because otherwise the ownership of row_instance would go to unwrap().
          * unwrap() consumes the given option which means iteration gets interrupted.
@@ -119,5 +121,5 @@ fn execute_select(statement: Statement, table: &mut Table) -> ExecuteResult {
         }
     }
 
-    ExecuteResult::Success
+    ExecuteResult::Success(Some(table.data.iter().filter(|row| row.id == statement.row_instance.as_ref().unwrap().id).cloned().collect()))
 }
