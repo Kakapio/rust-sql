@@ -94,13 +94,14 @@ fn execute_statement(statement: Statement, tb: &mut Table) -> ExecuteResult {
 }
 
 fn execute_insert(statement: Statement, table: &mut Table) -> ExecuteResult {
-    table.data.push(statement.row_instance.expect("Insert is missing row data."));
+    table
+        .data
+        .push(statement.row_instance.expect("Insert is missing row data."));
 
     ExecuteResult::Success(None)
 }
 
 fn execute_select(statement: Statement, table: &mut Table) -> ExecuteResult {
-
     // Select didn't specify an instance. Return all data in table.
     if statement.row_instance == None {
         for row in table.data.iter() {
@@ -109,8 +110,6 @@ fn execute_select(statement: Statement, table: &mut Table) -> ExecuteResult {
         return ExecuteResult::Success(Some(table.data.iter().cloned().collect()));
     }
 
-    
-    
     // Select cmd specified an instance of data.
     for row in table.data.iter() {
         /* I use 'as_ref()' here because otherwise the ownership of row_instance would go to unwrap().
@@ -121,5 +120,89 @@ fn execute_select(statement: Statement, table: &mut Table) -> ExecuteResult {
         }
     }
 
-    ExecuteResult::Success(Some(table.data.iter().filter(|row| row.id == statement.row_instance.as_ref().unwrap().id).cloned().collect()))
+    ExecuteResult::Success(Some(
+        table
+            .data
+            .iter()
+            .filter(|row| row.id == statement.row_instance.as_ref().unwrap().id)
+            .cloned()
+            .collect(),
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Helper method to quickly run SQL commands and mutate a table.
+    fn do_sql_cmd(tb: &mut Table, cmd: &str) {
+        let mut statement = Statement::default();
+        prepare_statement(&String::from(cmd), &mut statement);
+        execute_statement(statement, tb);
+    }
+
+    // Testing whether insert command errors.
+    #[test]
+    fn execute_statement_insert() {
+        let mut table = Table::new();
+        do_sql_cmd(&mut table, "insert 13 rosh kakapio@gmail.com");
+
+        assert_eq!(
+            table.data,
+            vec![Row {
+                id: 13,
+                username: String::from("rosh"),
+                email: String::from("kakapio@gmail.com")
+            }]
+        );
+    }
+
+    // Making sure our test doesn't allow everything to pass.
+    #[test]
+    fn execute_statement_insert_fail() {
+        let mut table = Table::new();
+        do_sql_cmd(&mut table, "insert 13 rosh kakapio@gmail.com");
+
+        assert_ne!(
+            table.data,
+            vec![Row {
+                id: 13,
+                username: String::from("alfred"),
+                email: String::from("alfredddd1@gmail.com")
+            }]
+        );
+    }
+
+    // Making sure we can insert multiple things and get them back out.
+    #[test]
+    fn execute_multiple_insert() {
+        let mut table = Table::new();
+        do_sql_cmd(&mut table, "insert 13 rosh kakapio@gmail.com");
+        do_sql_cmd(&mut table, "insert 42 stefan stefp@sigma.com");
+        do_sql_cmd(
+            &mut table,
+            "insert 1699 sniper_penut penutterbutter@yahoo.com",
+        );
+
+        assert_ne!(
+            table.data,
+            vec![
+                Row {
+                    id: 13,
+                    username: String::from("alfred"),
+                    email: String::from("alfredddd1@gmail.com")
+                },
+                Row {
+                    id: 42,
+                    username: String::from("stefan"),
+                    email: String::from("stefp@sigma.com")
+                },
+                Row {
+                    id: 1699,
+                    username: String::from("sniper_penut"),
+                    email: String::from("penutterbutter@yahoo.com")
+                }
+            ]
+        );
+    }
 }

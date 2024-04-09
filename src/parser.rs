@@ -94,8 +94,10 @@ fn prepare_select(statement: &mut Statement, cmd: &String) -> PrepareResult {
     };
 
     statement.row_instance = Some(Row {
-        id: id, username: Default::default(), email: Default::default()
+        id: id,
+        username: Default::default(),
+        email: Default::default(),
     });
-    
+
     return PrepareResult::Success;
 }
