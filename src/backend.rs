@@ -184,13 +184,13 @@ mod tests {
             "insert 1699 sniper_penut penutterbutter@yahoo.com",
         );
 
-        assert_ne!(
+        assert_eq!(
             table.data,
             vec![
                 Row {
                     id: 13,
-                    username: String::from("alfred"),
-                    email: String::from("alfredddd1@gmail.com")
+                    username: String::from("rosh"),
+                    email: String::from("kakapio@gmail.com")
                 },
                 Row {
                     id: 42,
