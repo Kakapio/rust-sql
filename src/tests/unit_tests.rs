@@ -86,3 +86,201 @@ fn prepare_statement_insert_parse_fail() {
         })
     );
 }
+
+// Testing insert with empty username
+#[test]
+fn prepare_statement_insert_empty_username() {
+    let mut out_statement = Statement::default();
+    let cmd = "insert 10  ape@gmail.com";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::SyntaxError);
+}
+
+// Testing insert with empty email
+#[test]
+fn prepare_statement_insert_empty_email() {
+    let mut out_statement = Statement::default();
+    let cmd = "insert 10 monkeylover ";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::SyntaxError);
+}
+
+// Testing insert with invalid ID (not a number)
+#[test]
+fn prepare_statement_insert_invalid_id() {
+    let mut out_statement = Statement::default();
+    let cmd = "insert abc monkeylover ape@gmail.com";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::SyntaxError);
+}
+
+// Testing insert with negative ID
+#[test]
+fn prepare_statement_insert_negative_id() {
+    let mut out_statement = Statement::default();
+    let cmd = "insert -10 monkeylover ape@gmail.com";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::SyntaxError);
+}
+
+// Testing insert with very large ID
+#[test]
+fn prepare_statement_insert_large_id() {
+    let mut out_statement = Statement::default();
+    let cmd = "insert 4294967295 monkeylover ape@gmail.com";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Success);
+}
+
+// Testing insert with ID exceeding u32 max
+#[test]
+fn prepare_statement_insert_id_overflow() {
+    let mut out_statement = Statement::default();
+    let cmd = "insert 4294967296 monkeylover ape@gmail.com";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::SyntaxError);
+}
+
+// Testing select with invalid ID
+#[test]
+fn prepare_statement_select_invalid_id() {
+    let mut out_statement = Statement::default();
+    let cmd = "select abc";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::SyntaxError);
+}
+
+// Testing select with negative ID
+#[test]
+fn prepare_statement_select_negative_id() {
+    let mut out_statement = Statement::default();
+    let cmd = "select -10";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::SyntaxError);
+}
+
+// Testing select with very large ID
+#[test]
+fn prepare_statement_select_large_id() {
+    let mut out_statement = Statement::default();
+    let cmd = "select 4294967295";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Success);
+}
+
+// Testing select with ID exceeding u32 max
+#[test]
+fn prepare_statement_select_id_overflow() {
+    let mut out_statement = Statement::default();
+    let cmd = "select 4294967296";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::SyntaxError);
+}
+
+// Testing select with extra parameters
+#[test]
+fn prepare_statement_select_extra_params() {
+    let mut out_statement = Statement::default();
+    let cmd = "select 10 extra";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Success);
+}
+
+// Testing insert with extra parameters
+#[test]
+fn prepare_statement_insert_extra_params() {
+    let mut out_statement = Statement::default();
+    let cmd = "insert 10 monkeylover ape@gmail.com extra";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Success);
+}
+
+// Testing insert with special characters in username
+#[test]
+fn prepare_statement_insert_special_chars_username() {
+    let mut out_statement = Statement::default();
+    let cmd = "insert 10 monkey_lover!@#$ ape@gmail.com";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Success);
+}
+
+// Testing insert with special characters in email
+#[test]
+fn prepare_statement_insert_special_chars_email() {
+    let mut out_statement = Statement::default();
+    let cmd = "insert 10 monkeylover ape+special@gmail.com";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Success);
+}
+
+// Testing insert with very long username
+#[test]
+fn prepare_statement_insert_long_username() {
+    let mut out_statement = Statement::default();
+    let cmd = format!("insert 10 {} ape@gmail.com", "a".repeat(1000));
+    let out_result = prepare_statement(&cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Success);
+}
+
+// Testing insert with very long email
+#[test]
+fn prepare_statement_insert_long_email() {
+    let mut out_statement = Statement::default();
+    let cmd = format!("insert 10 monkeylover {}@gmail.com", "a".repeat(1000));
+    let out_result = prepare_statement(&cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Success);
+}
+
+// Testing case sensitivity in commands
+#[test]
+fn prepare_statement_case_sensitivity() {
+    let mut out_statement = Statement::default();
+    let cmd = "INSERT 10 monkeylover ape@gmail.com";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Unrecognized);
+}
+
+// Testing whitespace handling
+#[test]
+fn prepare_statement_whitespace_handling() {
+    let mut out_statement = Statement::default();
+    let cmd = "  insert  10  monkeylover  ape@gmail.com  ";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Unrecognized);
+}
+
+// Testing empty command
+#[test]
+fn prepare_statement_empty_command() {
+    let mut out_statement = Statement::default();
+    let cmd = "";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Unrecognized);
+}
+
+// Testing whitespace-only command
+#[test]
+fn prepare_statement_whitespace_only() {
+    let mut out_statement = Statement::default();
+    let cmd = "   ";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Unrecognized);
+}
+
+// Testing tab characters in command
+#[test]
+fn prepare_statement_tab_characters() {
+    let mut out_statement = Statement::default();
+    let cmd = "insert\t10\tmonkeylover\tape@gmail.com";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Success);
+}
+
+// Testing newline characters in command
+#[test]
+fn prepare_statement_newline_characters() {
+    let mut out_statement = Statement::default();
+    let cmd = "insert\n10\nmonkeylover\nape@gmail.com";
+    let out_result = prepare_statement(cmd, &mut out_statement);
+    assert_eq!(out_result, PrepareResult::Success);
+}
