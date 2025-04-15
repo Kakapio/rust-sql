@@ -40,7 +40,7 @@ pub struct Row {
 }
 
 /// Converts a SQL statement into bytecode.
-pub fn prepare_statement(cmd: &String, statement: &mut Statement) -> PrepareResult {
+pub fn prepare_statement(cmd: &str, statement: &mut Statement) -> PrepareResult {
     // TODO: Use fall-through logic here in the future.
     if cmd.len() >= 6 {
         // First six chars are insert. We use a substring since this is followed by data.
@@ -48,7 +48,7 @@ pub fn prepare_statement(cmd: &String, statement: &mut Statement) -> PrepareResu
             return prepare_insert(statement, cmd);
         }
         // This can be either 'select' returning all, or 'select 2' return item with ID 2.
-        else if &cmd[0..6] == "select" {
+        if &cmd[0..6] == "select" {
             return prepare_select(statement, cmd);
         }
     }
@@ -56,7 +56,7 @@ pub fn prepare_statement(cmd: &String, statement: &mut Statement) -> PrepareResu
     PrepareResult::Unrecognized
 }
 
-fn prepare_insert(statement: &mut Statement, cmd: &String) -> PrepareResult {
+fn prepare_insert(statement: &mut Statement, cmd: &str) -> PrepareResult {
     statement.cmd = StatementType::Insert;
     let (id, username, email) = match scan_fmt!(cmd, "insert {} {} {}", u32, String, String) {
         Ok((id, username, email)) => (id, username, email),
@@ -72,10 +72,10 @@ fn prepare_insert(statement: &mut Statement, cmd: &String) -> PrepareResult {
         email,
     });
 
-    return PrepareResult::Success;
+    PrepareResult::Success
 }
 
-fn prepare_select(statement: &mut Statement, cmd: &String) -> PrepareResult {
+fn prepare_select(statement: &mut Statement, cmd: &str) -> PrepareResult {
     statement.cmd = StatementType::Select;
 
     // We are selecting everything in this case, e.g "select". Do not bother looking for specifics.
@@ -94,10 +94,10 @@ fn prepare_select(statement: &mut Statement, cmd: &String) -> PrepareResult {
     };
 
     statement.row_instance = Some(Row {
-        id: id,
+        id,
         username: Default::default(),
         email: Default::default(),
     });
 
-    return PrepareResult::Success;
+    PrepareResult::Success
 }

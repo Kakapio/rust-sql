@@ -33,15 +33,10 @@ pub fn entrypoint() {
 
         // Is a command
         if input.starts_with('.') {
-            match execute_command(&input) {
-                MetaCommandResult::Success => {
-                    continue; // Executed command, get next input.
-                }
-                MetaCommandResult::Unrecognized => {
-                    println!("Unrecognized command: {}", input);
-                    continue; // Skip this iteration of our IO loop.
-                }
+            if let MetaCommandResult::Unrecognized = execute_command(&input) {
+                println!("Unrecognized command: {}", input);
             }
+            continue; // Skip this iteration of our IO loop.
         }
 
         let mut statement = Statement::default();
@@ -61,7 +56,7 @@ pub fn entrypoint() {
         }
 
         match execute_statement(statement, &mut table) {
-            ExecuteResult::Success(data) => {
+            ExecuteResult::Success(_) => {
                 println!("Successfully executed...")
             }
             ExecuteResult::TableFull => {
@@ -72,11 +67,11 @@ pub fn entrypoint() {
 }
 
 /// Used to execute non-sql CLI commands, e.g exit.
-pub fn execute_command(cmd: &String) -> MetaCommandResult {
+pub fn execute_command(cmd: &str) -> MetaCommandResult {
     if cmd == ".exit" {
         exit(0);
     } else {
-        return MetaCommandResult::Unrecognized;
+        MetaCommandResult::Unrecognized
     }
 }
 
@@ -103,7 +98,7 @@ fn execute_insert(statement: Statement, table: &mut Table) -> ExecuteResult {
 
 fn execute_select(statement: Statement, table: &mut Table) -> ExecuteResult {
     // Select didn't specify an instance. Return all data in table.
-    if statement.row_instance == None {
+    if statement.row_instance.is_none() {
         for row in table.data.iter() {
             println!("Found data: {:?}", row);
         }
@@ -111,23 +106,26 @@ fn execute_select(statement: Statement, table: &mut Table) -> ExecuteResult {
     }
 
     // Select cmd specified an instance of data.
-    for row in table.data.iter() {
-        /* I use 'as_ref()' here because otherwise the ownership of row_instance would go to unwrap().
-         * unwrap() consumes the given option which means iteration gets interrupted.
-         */
-        if row.id == statement.row_instance.as_ref().unwrap().id {
-            println!("Found data: {:?}", row);
+    let target_id = statement.row_instance.as_ref().map(|row| row.id);
+
+    if let Some(id) = target_id {
+        for row in table.data.iter() {
+            if row.id == id {
+                println!("Found data: {:?}", row);
+            }
         }
+
+        return ExecuteResult::Success(Some(
+            table
+                .data
+                .iter()
+                .filter(|row| row.id == id)
+                .cloned()
+                .collect(),
+        ));
     }
 
-    ExecuteResult::Success(Some(
-        table
-            .data
-            .iter()
-            .filter(|row| row.id == statement.row_instance.as_ref().unwrap().id)
-            .cloned()
-            .collect(),
-    ))
+    ExecuteResult::Success(None)
 }
 
 #[cfg(test)]
@@ -137,7 +135,7 @@ mod tests {
     /// Helper method to quickly run SQL commands and mutate a table.
     fn do_sql_cmd(tb: &mut Table, cmd: &str) {
         let mut statement = Statement::default();
-        prepare_statement(&String::from(cmd), &mut statement);
+        prepare_statement(cmd, &mut statement);
         execute_statement(statement, tb);
     }
 
@@ -151,8 +149,8 @@ mod tests {
             table.data,
             vec![Row {
                 id: 13,
-                username: String::from("rosh"),
-                email: String::from("kakapio@gmail.com")
+                username: "rosh".to_string(),
+                email: "kakapio@gmail.com".to_string()
             }]
         );
     }
@@ -167,8 +165,8 @@ mod tests {
             table.data,
             vec![Row {
                 id: 13,
-                username: String::from("alfred"),
-                email: String::from("alfredddd1@gmail.com")
+                username: "alfred".to_string(),
+                email: "alfredddd1@gmail.com".to_string()
             }]
         );
     }
@@ -189,18 +187,18 @@ mod tests {
             vec![
                 Row {
                     id: 13,
-                    username: String::from("rosh"),
-                    email: String::from("kakapio@gmail.com")
+                    username: "rosh".to_string(),
+                    email: "kakapio@gmail.com".to_string()
                 },
                 Row {
                     id: 42,
-                    username: String::from("stefan"),
-                    email: String::from("stefp@sigma.com")
+                    username: "stefan".to_string(),
+                    email: "stefp@sigma.com".to_string()
                 },
                 Row {
                     id: 1699,
-                    username: String::from("sniper_penut"),
-                    email: String::from("penutterbutter@yahoo.com")
+                    username: "sniper_penut".to_string(),
+                    email: "penutterbutter@yahoo.com".to_string()
                 }
             ]
         );
