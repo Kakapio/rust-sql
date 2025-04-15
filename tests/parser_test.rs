@@ -1,5 +1,5 @@
 use sql_engine::parser::{
-    prepare_statement, MetaCommandResult, PrepareResult, Row, Statement, StatementType,
+    prepare_statement, PrepareResult, Row, Statement, StatementType,
 };
 
 // Testing whether the enum is set properly.
