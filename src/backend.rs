@@ -75,7 +75,7 @@ pub fn execute_command(cmd: &str) -> MetaCommandResult {
     }
 }
 
-fn execute_statement(statement: Statement, tb: &mut Table) -> ExecuteResult {
+pub fn execute_statement(statement: Statement, tb: &mut Table) -> ExecuteResult {
     match statement.cmd {
         StatementType::Insert => {
             println!("Performing an insert...");
