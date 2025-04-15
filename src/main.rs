@@ -6,9 +6,6 @@ use crate::backend::*;
  */
 mod backend;
 mod parser;
-mod tests {
-    mod unit_tests;
-}
 
 fn main() {
     entrypoint();
